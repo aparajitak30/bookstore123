@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BookStore</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="toast" class="toast"></div>
+
+<!-- Login/Register Modal -->
+<div id="authModal" class="cart-popup">
+  <div class="cart-content">
+    <div class="cart-header">
+      <h2 id="authTitle">Login</h2>
+      <button class="close-btn" onclick="toggleAuthModal()">X</button>
+    </div>
+
+    <input type="text" id="authUsername" placeholder="Username">
+    <input type="password" id="authPassword" placeholder="Password">
+
+    <button id="authSubmit">Login</button>
+    <p id="authSwitch">Don't have an account? Register</p>
+  </div>
+</div>
+
+<!-- Navbar -->
+<nav>
+  <div class="logo"><span>B</span>BookStore</div>
+  <input type="text" placeholder="Search books, authors, ISBN...">
+  <div class="actions">
+    <button id="browseBtn">Browse Books</button>
+    <button class="primary" id="accountBtn">Account</button>
+    <button class="cart-btn" id="cartBtn">Cart (0)</button>
+  </div>
+</nav>
+
+<!-- Hero Section -->
+<section class="hero">
+  <h1>Discover Your Next <span>Great Read</span></h1>
+  <p>Explore millions of books across all genres and find your perfect match</p>
+  <div class="buttons">
+    <button class="browse">Browse Books</button>
+    <button class="new">New Releases</button>
+  </div>
+</section>
+
+<!-- Featured Books -->
+<section class="section">
+  <h2>Featured Books</h2>
+  <p>Handpicked selections from our editors</p>
+  <div class="books" id="booksContainer">
+    <!-- Hardcoded Books -->
+    <div class="book">
+      <img src="https://images-na.ssl-images-amazon.com/images/I/81af+MCATTL.jpg" alt="The Great Gatsby">
+      <p class="genre">Fiction</p>
+      <h3>The Great Gatsby</h3>
+      <p>F. Scott Fitzgerald</p>
+      <p class="rating">⭐ 4.5</p>
+      <p><strong>$9.99</strong></p>
+      <button onclick="addToCart('The Great Gatsby', 9.99)">Add to Cart</button>
+    </div>
+
+    <div class="book">
+      <img src="https://images-na.ssl-images-amazon.com/images/I/71kxa1-0mfL.jpg" alt="1984">
+      <p class="genre">Sci-Fi</p>
+      <h3>1984</h3>
+      <p>George Orwell</p>
+      <p class="rating">⭐ 4.7</p>
+      <p><strong>$10.50</strong></p>
+      <button onclick="addToCart('1984', 10.5)">Add to Cart</button>
+    </div>
+
+    <div class="book">
+      <img src="https://images-na.ssl-images-amazon.com/images/I/81OthjkJBuL.jpg" alt="Pride and Prejudice">
+      <p class="genre">Romance</p>
+      <h3>Pride and Prejudice</h3>
+      <p>Jane Austen</p>
+      <p class="rating">⭐ 4.6</p>
+      <p><strong>$8.50</strong></p>
+      <button onclick="addToCart('Pride and Prejudice', 8.5)">Add to Cart</button>
+    </div>
+
+    <div class="book">
+      <img src="https://cdn.britannica.com/21/182021-050-666DB6B1/book-cover-To-Kill-a-Mockingbird-many-1961.jpg" alt="To Kill a Mockingbird">
+      <p class="genre">Fiction</p>
+      <h3>To Kill a Mockingbird</h3>
+      <p>Harper Lee</p>
+      <p class="rating">⭐ 4.8</p>
+      <p><strong>$12.99</strong></p>
+      <button onclick="addToCart('To Kill a Mockingbird', 12.99)">Add to Cart</button>
+    </div>
+
+    <!-- New Books -->
+    <div class="book">
+      <img src="https://images-na.ssl-images-amazon.com/images/I/91HHqVTAJQL.jpg" alt="The Hobbit">
+      <p class="genre">Fantasy</p>
+      <h3>The Hobbit</h3>
+      <p>J.R.R. Tolkien</p>
+      <p class="rating">⭐ 4.7</p>
+      <p><strong>$11.99</strong></p>
+      <button onclick="addToCart('The Hobbit', 11.99)">Add to Cart</button>
+    </div>
+
+    <div class="book">
+      <img src="https://images-na.ssl-images-amazon.com/images/I/81WcnNQ-TBL.jpg" alt="The Catcher in the Rye">
+      <p class="genre">Fiction</p>
+      <h3>The Catcher in the Rye</h3>
+      <p>J.D. Salinger</p>
+      <p class="rating">⭐ 4.3</p>
+      <p><strong>$9.50</strong></p>
+      <button onclick="addToCart('The Catcher in the Rye', 9.5)">Add to Cart</button>
+    </div>
+
+    <div class="book">
+      <img src="https://tse1.mm.bing.net/th/id/OIP.5J5NM91_bIqBij-CbxIVNwHaLN?cb=ucfimg2ucfimg=1&rs=1&pid=ImgDetMain&o=7&rm=3" alt="The Alchemist">
+      <p class="genre">Fiction</p>
+      <h3>The Alchemist</h3>
+      <p>Paulo Coelho</p>
+      <p class="rating">⭐ 4.6</p>
+      <p><strong>$10.99</strong></p>
+      <button onclick="addToCart('The Alchemist', 10.99)">Add to Cart</button>
+    </div>
+
+    <div class="book">
+      <img src="https://images-na.ssl-images-amazon.com/images/I/91bYsX41DVL.jpg" alt="Harry Potter and the Sorcerer's Stone">
+      <p class="genre">Fantasy</p>
+      <h3>Harry Potter and the Sorcerer's Stone</h3>
+      <p>J.K. Rowling</p>
+      <p class="rating">⭐ 4.9</p>
+      <p><strong>$12.50</strong></p>
+      <button onclick="addToCart('Harry Potter and the Sorcerer\'s Stone', 12.5)">Add to Cart</button>
+    </div>
+  </div>
+  <button class="view-all">View All Books</button>
+</section>
+
+
+
+<!-- Categories -->
+<section class="categories">
+  <h2>Browse by Category</h2>
+  <div class="list" id="categoriesContainer">
+    <div class="item">Fiction</div>
+    <div class="item">Non-Fiction</div>
+    <div class="item">Mystery</div>
+    <div class="item">Romance</div>
+    <div class="item">Sci-Fi</div>
+    <div class="item">Biography</div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="newsletter">
+    <h3>Stay Updated</h3>
+    <p>Get notified about new releases, special offers, and reading recommendations</p>
+    <input id="subscribeEmail" type="email" placeholder="Enter your email">
+    <button id="subscribeBtn">Subscribe</button>
+  </div>
+  <div class="links">
+    <div>
+      <h4>Quick Links</h4>
+      <ul>
+        <li>Browse Books</li>
+        <li>New Releases</li>
+        <li>Bestsellers</li>
+        <li>Categories</li>
+      </ul>
+    </div>
+    <div>
+      <h4>Customer Service</h4>
+      <ul>
+        <li>Help Center</li>
+        <li>Shipping Info</li>
+        <li>Returns</li>
+        <li>Contact Us</li>
+      </ul>
+    </div>
+  </div>
+  <p>© 2024 BookStore. All rights reserved.</p>
+</footer>
+
+<!-- Cart Popup -->
+<div class="cart-popup" id="cartPopup">
+  <div class="cart-content">
+    <div class="cart-header">
+      <h2>Your Cart</h2>
+      <button class="close-btn" onclick="toggleCart()">X</button>
+    </div>
+    <ul id="cartItems"></ul>
+    <p><strong>Total:</strong> $<span id="cartTotal">0</span></p>
+    <button id="checkoutBtn">Checkout</button>
+  </div>
+</div>
+
+<script src="script.js"></script>
+
+</body>
+</html>
