@@ -24,10 +24,10 @@ const JWT_SECRET = process.env.JWT_SECRET || "dev_secret_key_change_this";
 
 // Root route
 app.get("/", (req, res) => {
-  res.send("✅ Backend connected successfully!");
+  res.send(" Backend connected successfully!");
 });
 
-// 🔒 Middleware: authenticate JWT
+//  Middleware: authenticate JWT
 function authenticateToken(req, res, next) {
   const authHeader = req.headers["authorization"];
   if (!authHeader) return res.status(401).json({ error: "No token provided" });
@@ -58,7 +58,7 @@ app.post("/register", async (req, res) => {
       createdAt: new Date(),
     });
 
-    res.json({ message: "✅ Registered successfully", id: newUserRef.id });
+    res.json({ message: " Registered successfully", id: newUserRef.id });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Registration failed" });
@@ -88,7 +88,7 @@ app.post("/login", async (req, res) => {
     );
 
     res.json({
-      message: "✅ Login successful",
+      message: " Login successful",
       token,
       username: user.username,
     });
@@ -115,7 +115,7 @@ app.post("/add-book", authenticateToken, async (req, res) => {
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    res.json({ message: "✅ Book added successfully", id: docRef.id });
+    res.json({ message: " Book added successfully", id: docRef.id });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to add book" });
@@ -149,7 +149,7 @@ app.post("/checkout", authenticateToken, async (req, res) => {
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    res.json({ message: "✅ Order placed", orderId: orderRef.id });
+    res.json({ message: " Order placed", orderId: orderRef.id });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Checkout failed" });
@@ -167,7 +167,7 @@ app.post("/subscribe", async (req, res) => {
       subscribedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    res.json({ message: "✅ Subscribed successfully" });
+    res.json({ message: " Subscribed successfully" });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Subscription failed" });
@@ -188,4 +188,5 @@ app.get("/orders", authenticateToken, async (req, res) => {
 
 // Start server
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+
