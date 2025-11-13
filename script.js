@@ -1,278 +1,191 @@
-let cart = [];
-const BASE_URL = "https://bookstore123-1.onrender.com";
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const admin = require("firebase-admin");
+const path = require("path");
 
-let currentUser = JSON.parse(localStorage.getItem("currentUser")) || null;
+// Load Firebase service account
+const serviceAccount = require("./serviceAccountKey.json");
 
-// DOM elements
-const cartBtn = document.getElementById("cartBtn");
-const cartPopup = document.getElementById("cartPopup");
-const cartItems = document.getElementById("cartItems");
-const cartTotal = document.getElementById("cartTotal");
-const checkoutBtn = document.getElementById("checkoutBtn");
-const subscribeBtn = document.getElementById("subscribeBtn");
-const emailInput = document.getElementById("subscribeEmail");
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
 
-const authModal = document.getElementById("authModal");
-const authTitle = document.getElementById("authTitle");
-const authUsername = document.getElementById("authUsername");
-const authPassword = document.getElementById("authPassword");
-const authSubmit = document.getElementById("authSubmit");
-const authSwitch = document.getElementById("authSwitch");
-const accountBtn = document.getElementById("accountBtn");
+const db = admin.firestore();
 
-// ---------------- CART FUNCTIONS ----------------
-function addToCart(name, price) {
-  const existing = cart.find(item => item.name === name);
-  if (existing) {
-    existing.quantity += 1;
-  } else {
-    cart.push({ name, price, quantity: 1 });
-  }
-  updateCart();
-  showToast(`"${name}" added to your cart!`);
-}
+const app = express();
+app.use(cors());
+app.use(express.json());
 
-function removeFromCart(index) {
-  cart.splice(index, 1);
-  updateCart();
-}
+// JWT Secret
+const JWT_SECRET = process.env.JWT_SECRET || "dev_secret_key_change_this";
 
-function changeQuantity(index, delta) {
-  cart[index].quantity += delta;
-  if (cart[index].quantity < 1) cart[index].quantity = 1;
-  updateCart();
-}
+// Root route
+app.get("/", (req, res) => {
+  res.send("✅ Backend connected successfully!");
+});
 
-function updateCart() {
-  cartItems.innerHTML = "";
-  let total = 0;
+//  Middleware: authenticate JWT
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers["authorization"];
+  if (!authHeader) return res.status(401).json({ error: "No token provided" });
 
-  if (cart.length === 0) {
-    cartItems.innerHTML = "<p>Your cart is empty.</p>";
-  }
+  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : authHeader;
 
-  cart.forEach((item, index) => {
-    const li = document.createElement("li");
-    li.style.display = "flex";
-    li.style.alignItems = "center";
-    li.style.justifyContent = "space-between";
-    li.style.padding = "10px 5px";
-    li.style.borderBottom = "1px solid #eee";
-
-    // Product name
-    const nameDiv = document.createElement("div");
-    nameDiv.textContent = item.name;
-    nameDiv.style.flex = "1";
-    nameDiv.style.marginRight = "10px";
-
-    // Quantity controls
-    const qtyDiv = document.createElement("div");
-    qtyDiv.style.display = "flex";
-    qtyDiv.style.alignItems = "center";
-    qtyDiv.style.gap = "5px";
-
-    const minusBtn = document.createElement("button");
-    minusBtn.textContent = "-";
-    minusBtn.addEventListener("click", () => changeQuantity(index, -1));
-
-    const qtySpan = document.createElement("span");
-    qtySpan.textContent = item.quantity;
-
-    const plusBtn = document.createElement("button");
-    plusBtn.textContent = "+";
-    plusBtn.addEventListener("click", () => changeQuantity(index, 1));
-
-    qtyDiv.appendChild(minusBtn);
-    qtyDiv.appendChild(qtySpan);
-    qtyDiv.appendChild(plusBtn);
-
-    // Price
-    const priceDiv = document.createElement("div");
-    priceDiv.textContent = `$${(item.price * item.quantity).toFixed(2)}`;
-
-    // Remove button
-    const removeBtn = document.createElement("button");
-    removeBtn.textContent = "Remove";
-    removeBtn.addEventListener("click", () => removeFromCart(index));
-
-    li.appendChild(nameDiv);
-    li.appendChild(qtyDiv);
-    li.appendChild(priceDiv);
-    li.appendChild(removeBtn);
-
-    cartItems.appendChild(li);
-
-    total += item.price * item.quantity;
+  jwt.verify(token, JWT_SECRET, (err, payload) => {
+    if (err) return res.status(403).json({ error: "Invalid or expired token" });
+    req.user = payload; // payload contains id and username
+    next();
   });
-
-  cartTotal.textContent = total.toFixed(2);
-  cartBtn.textContent = `Cart (${cart.length})`;
-
-  // Persist cart
-  localStorage.setItem("cart", JSON.stringify(cart));
 }
 
-function toggleCart() {
-  if (cartPopup.style.display === "flex") {
-    cartPopup.style.display = "none";
-  } else {
-    cartPopup.style.display = "flex";
-    cartPopup.style.justifyContent = "center";
-    cartPopup.style.alignItems = "center";
-  }
-}
-
-// ---------------- AUTH FUNCTIONS ----------------
-function toggleAuthModal() {
-  if (authModal.style.display === "flex") {
-    authModal.style.display = "none";
-  } else {
-    authModal.style.display = "flex";
-    authModal.style.justifyContent = "center";
-    authModal.style.alignItems = "center";
-  }
-}
-
-// Logout or open login/register modal
-accountBtn.addEventListener("click", () => {
-  if (currentUser) {
-    if (confirm(`Logout ${currentUser.username}?`)) {
-      currentUser = null;
-      localStorage.removeItem("currentUser");
-      accountBtn.textContent = "Account";
-      alert("Logged out successfully!");
-    }
-  } else {
-    toggleAuthModal();
-  }
-});
-
-// Switch between Login/Register
-let isLogin = true;
-authSwitch.addEventListener("click", () => {
-  isLogin = !isLogin;
-  authTitle.textContent = isLogin ? "Login" : "Register";
-  authSubmit.textContent = isLogin ? "Login" : "Register";
-  authSwitch.textContent = isLogin
-    ? "Don't have an account? Register"
-    : "Already have an account? Login";
-});
-
-// ---------------- LOGIN/REGISTER ----------------
-authSubmit.addEventListener("click", async () => {
-  const username = authUsername.value.trim();
-  const password = authPassword.value.trim();
-
-  if (!username || !password) return alert("Please fill in all fields!");
-
-  const url = isLogin
-  ? `${BASE_URL}/login`
-  : `${BASE_URL}/register`;
-
-
+// Register user
+app.post("/register", async (req, res) => {
   try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
+    const { username, password } = req.body;
+    if (!username || !password) return res.status(400).json({ error: "Missing username or password" });
+
+    const usersRef = db.collection("users");
+    const existing = await usersRef.where("username", "==", username).get();
+    if (!existing.empty) return res.status(400).json({ error: "User already exists" });
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUserRef = await usersRef.add({
+      username,
+      password: hashedPassword,
+      createdAt: new Date(),
     });
 
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Error during authentication");
-
-    if (isLogin) {
-      currentUser = { username, token: data.token };
-      localStorage.setItem("currentUser", JSON.stringify(currentUser));
-      accountBtn.textContent = username;
-      showToast("Login successful!");
-    } else {
-      alert("Registered successfully! Please login now.");
-      isLogin = true;
-      authTitle.textContent = "Login";
-      authSubmit.textContent = "Login";
-      authSwitch.textContent = "Don't have an account? Register";
-    }
-
-    toggleAuthModal();
-    authUsername.value = "";
-    authPassword.value = "";
+    res.json({ message: "✅ Registered successfully", id: newUserRef.id });
   } catch (err) {
     console.error(err);
-    alert(err.message || "Authentication failed");
+    res.status(500).json({ error: "Registration failed" });
   }
 });
 
-// ---------------- CHECKOUT ----------------
-checkoutBtn.addEventListener("click", async () => {
-  if (!currentUser) return alert("Please login to place an order!");
-  if (cart.length === 0) return alert("Your cart is empty!");
-
-  const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-
+// Login user
+app.post("/login", async (req, res) => {
   try {
-    const res = await fetch(`${BASE_URL}/checkout`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${currentUser.token}`,
-      },
-      body: JSON.stringify({ items: cart, total }),
+    const { username, password } = req.body;
+    if (!username || !password) return res.status(400).json({ error: "Missing fields" });
+
+    const usersRef = db.collection("users");
+    const snapshot = await usersRef.where("username", "==", username).get();
+    if (snapshot.empty) return res.status(404).json({ error: "User not found" });
+
+    const userDoc = snapshot.docs[0];
+    const user = userDoc.data();
+
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) return res.status(401).json({ error: "Wrong password" });
+
+    const token = jwt.sign(
+      { id: userDoc.id, username: user.username },
+      JWT_SECRET,
+      { expiresIn: "2h" }
+    );
+
+    res.json({
+      message: " Login successful",
+      token,
+      username: user.username,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Login failed" });
+  }
+});
+
+// Add book (any authenticated user)
+app.post("/add-book", authenticateToken, async (req, res) => {
+  try {
+    const { title, author, genre, price, rating, image } = req.body;
+    if (!title || !author || !genre || !price || !rating || !image)
+      return res.status(400).json({ error: "All fields are required" });
+
+    const docRef = await db.collection("books").add({
+      title,
+      author,
+      genre,
+      price,
+      rating,
+      image,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Checkout failed");
-
-    alert(`Order placed successfully! Order ID: ${data.orderId}`);
-    cart = [];
-    updateCart();
-    toggleCart();
+    res.json({ message: " Book added successfully", id: docRef.id });
   } catch (err) {
     console.error(err);
-    alert("Checkout failed. Please try again.");
+    res.status(500).json({ error: "Failed to add book" });
   }
 });
 
-// ---------------- NEWSLETTER ----------------
-subscribeBtn.addEventListener("click", async () => {
-  const email = emailInput.value.trim();
-  if (!email) return alert("Please enter your email!");
-
+// Fetch all books
+app.get("/books", async (req, res) => {
   try {
-    const res = await fetch("`${BASE_URL}/subscribe`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
+    const snapshot = await db.collection("books").orderBy("createdAt", "desc").get();
+    const books = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    res.json(books);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch books" });
+  }
+});
+
+// Checkout (protected)
+app.post("/checkout", authenticateToken, async (req, res) => {
+  try {
+    const { items, total } = req.body;
+    if (!Array.isArray(items) || typeof total !== "number")
+      return res.status(400).json({ error: "Invalid cart data" });
+
+    const orderRef = await db.collection("orders").add({
+      user_id: req.user.id,
+      username: req.user.username,
+      items,
+      total,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Subscription failed");
-
-    showToast("Subscribed successfully!");
-    emailInput.value = "";
+    res.json({ message: "Order placed", orderId: orderRef.id });
   } catch (err) {
     console.error(err);
-    alert("Subscription failed. Try again later.");
+    res.status(500).json({ error: "Checkout failed" });
   }
 });
 
-// ---------------- TOAST ----------------
-function showToast(message) {
-  const toast = document.getElementById("toast");
-  toast.textContent = message;
-  toast.classList.add("show");
-  setTimeout(() => toast.classList.remove("show"), 3000);
-}
+// Subscribe
+app.post("/subscribe", async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: "Email required" });
 
-// ---------------- INITIAL SETUP ----------------
-function init() {
-  if (currentUser) accountBtn.textContent = currentUser.username;
+    await db.collection("subscribers").add({
+      email,
+      subscribedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
 
-  const savedCart = JSON.parse(localStorage.getItem("cart"));
-  if (Array.isArray(savedCart)) cart = savedCart;
+    res.json({ message: " Subscribed successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Subscription failed" });
+  }
+});
 
-  updateCart();
-}
+// Fetch orders (protected)
+app.get("/orders", authenticateToken, async (req, res) => {
+  try {
+    const snapshot = await db.collection("orders").where("user_id", "==", req.user.id).orderBy("createdAt", "desc").get();
+    const orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    res.json(orders);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch orders" });
+  }
+});
 
-cartBtn.addEventListener("click", toggleCart);
-init();
-
+// Start server
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
