@@ -1,4 +1,6 @@
 let cart = [];
+const BASE_URL = "https://bookstore123-1.onrender.com";
+
 let currentUser = JSON.parse(localStorage.getItem("currentUser")) || null;
 
 // DOM elements
@@ -164,8 +166,9 @@ authSubmit.addEventListener("click", async () => {
   if (!username || !password) return alert("Please fill in all fields!");
 
   const url = isLogin
-    ? "http://localhost:3001/login"
-    : "http://localhost:3001/register";
+  ? `${BASE_URL}/login`
+  : `${BASE_URL}/register`;
+
 
   try {
     const res = await fetch(url, {
@@ -207,7 +210,7 @@ checkoutBtn.addEventListener("click", async () => {
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   try {
-    const res = await fetch("http://localhost:3001/checkout", {
+    const res = await fetch(`${BASE_URL}/checkout`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -235,7 +238,7 @@ subscribeBtn.addEventListener("click", async () => {
   if (!email) return alert("Please enter your email!");
 
   try {
-    const res = await fetch("http://localhost:3001/subscribe", {
+    const res = await fetch("`${BASE_URL}/subscribe`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email }),
@@ -272,3 +275,4 @@ function init() {
 
 cartBtn.addEventListener("click", toggleCart);
 init();
+
